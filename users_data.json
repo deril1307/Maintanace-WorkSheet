@@ -1,0 +1,42 @@
+{
+  "001": {
+    "nik": "001",
+    "name": "Deril",
+    "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "role": "admin",
+    "position": "Admin (A)",
+    "description": "Admin - Membuat MWS"
+  },
+  "002": {
+    "nik": "002",
+    "name": "Retsi",
+    "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "role": "mechanic",
+    "position": "Mekanik (U1)",
+    "description": "User 1 - Mengisi MAN, Hours, TECH dan Start/Finish Date"
+  },
+  "003": {
+    "nik": "003",
+    "name": "Aryo",
+    "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "role": "quality1",
+    "position": "Quality Inspector (U2)",
+    "description": "User 2 - Inspeksi setiap langkah kerja"
+  },
+  "004": {
+    "nik": "004",
+    "name": "Endro",
+    "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "role": "quality2",
+    "position": "Quality CUDR (U3)",
+    "description": "User 3 - Verified By"
+  },
+  "005": {
+    "nik": "005",
+    "name": "Eko Prasetyo",
+    "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "role": "superadmin",
+    "position": "Super Admin (S.A)",
+    "description": "Super Admin - Approved By"
+  }
+}

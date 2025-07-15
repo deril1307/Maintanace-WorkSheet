@@ -1,0 +1,126 @@
+{% extends "shared/base.html" %} {% block title %}Login - Sistem MWS Aircraft Maintenance{% endblock %} {% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+  <div class="max-w-md w-full">
+    <div class="text-center mb-6">
+      <img src="{{ url_for('static', filename='img/logo PT DI.jpeg') }}" alt="Logo PT DI" class="w-32 h-32 mx-auto mb-4 object-contain" />
+
+      <h1 class="text-3xl font-bold text-gray-800">Maintenance WorkSheet</h1>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8">
+      <div class="text-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-700">Selamat Datang Kembali</h2>
+        <p class="text-gray-500 text-sm">Masuk dengan NIK dan password Anda</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+      <div class="mb-4 p-4 rounded-lg text-sm {% if category == 'error' %}bg-red-100 border border-red-200 text-red-700{% else %}bg-green-100 border border-green-200 text-green-700{% endif %}">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <form method="POST" class="space-y-4">
+        <div>
+          <label for="nik" class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-400"></i>
+            </div>
+            <input
+              type="text"
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              id="nik"
+              name="nik"
+              required
+              maxlength="3"
+              pattern="\d{3}"
+              title="Harus berupa 3 digit angka"
+              placeholder="Contoh: 001"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input type="password" class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="password" name="password" required placeholder="Masukkan password" />
+            <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-blue-600">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+          <i class="fas fa-sign-in-alt mr-2"></i>
+          Masuk
+        </button>
+      </form>
+
+      <div class="text-center mt-6">
+        <a href="{{ url_for('index') }}" class="text-sm text-blue-600 hover:text-blue-700 hover:underline font-medium"> Kembali ke Halaman Utama </a>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-gray-100 rounded-lg border">
+      <h6 class="font-semibold text-gray-700 mb-2">Gunakan Akun Demo (Klik untuk mengisi):</h6>
+      <div id="demo-accounts" class="text-sm text-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <button type="button" class="demo-account-btn" data-nik="001" data-password="123"><strong>Admin:</strong> 001 / 123</button>
+        <button type="button" class="demo-account-btn" data-nik="002" data-password="123"><strong>Mechanic:</strong> 002 / 123</button>
+        <button type="button" class="demo-account-btn" data-nik="003" data-password="123"><strong>Quality 1:</strong> 003 / 123</button>
+        <button type="button" class="demo-account-btn" data-nik="004" data-password="123"><strong>Quality 2:</strong> 004 / 123</button>
+        <button type="button" class="demo-account-btn" data-nik="005" data-password="123"><strong>Super Admin:</strong> 005 / 123</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .demo-account-btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .demo-account-btn:hover {
+    background-color: #f0f9ff;
+    border-color: #3b82f6;
+    color: #1e40af;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Fitur Tampilkan/Sembunyikan Password
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordInput = document.getElementById("password");
+
+    if (togglePassword) {
+      togglePassword.addEventListener("click", function () {
+        const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+        passwordInput.setAttribute("type", type);
+        // Ganti ikon mata
+        this.querySelector("i").classList.toggle("fa-eye");
+        this.querySelector("i").classList.toggle("fa-eye-slash");
+      });
+    }
+
+    // Fitur Akun Demo Interaktif
+    const demoButtons = document.querySelectorAll(".demo-account-btn");
+    const nikInput = document.getElementById("nik");
+
+    demoButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const nik = this.dataset.nik;
+        const password = this.dataset.password;
+
+        nikInput.value = nik;
+        passwordInput.value = password;
+      });
+    });
+  });
+</script>
+{% endblock %}

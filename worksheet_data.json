@@ -1,0 +1,154 @@
+{
+  "parts": {
+    "MWS-001": {
+      "partNumber": "Tes",
+      "serialNumber": "Tes",
+      "tittle": {
+        "name": "Tes",
+        "jobType": "IRAN"
+      },
+      "ref": "Tes",
+      "customer": "Tes",
+      "acType": "CN123",
+      "wbsNo": "123",
+      "worksheetNo": "123",
+      "iwoNo": "123",
+      "shopArea": "IN",
+      "revision": "2",
+      "status": "pending",
+      "currentStep": 0,
+      "assignedTo": "002",
+      "startDate": "2025-07-15",
+      "finishDate": "",
+      "targetDate": "2025-07-15",
+      "preparedBy": "",
+      "preparedDate": "",
+      "approvedBy": "",
+      "approvedDate": "",
+      "verifiedBy": "",
+      "verifiedDate": "",
+      "steps": [
+        {
+          "no": 1,
+          "description": "Incoming Record",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 2,
+          "description": "Functional Test",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 3,
+          "description": "Fault Isolation",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 4,
+          "description": "Disassembly",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 5,
+          "description": "Cleaning",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 6,
+          "description": "Check",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 7,
+          "description": "Assembly",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 8,
+          "description": "Functional Test",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 9,
+          "description": "FOD Control",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        },
+        {
+          "no": 10,
+          "description": "Final Inspection",
+          "details": [],
+          "status": "pending",
+          "completedBy": "",
+          "completedDate": "",
+          "man": "",
+          "hours": "",
+          "tech": "",
+          "insp": ""
+        }
+      ]
+    }
+  }
+}
