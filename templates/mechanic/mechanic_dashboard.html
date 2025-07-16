@@ -10,12 +10,14 @@ render_tracking_list %} {% block content %}
           <div class="bg-green-600 p-3 rounded-lg mr-4"><i class="fas fa-tools text-white text-xl"></i></div>
           <div>
             <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Mechanic Dashboard</h1>
-            <p class="text-sm sm:text-base text-gray-600">{{ user.name }} ({{ user.nik }}) - {{ user.description }}</p>
           </div>
         </div>
         <div class="relative">
           <button id="user-menu-button" class="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">
-            <span class="font-medium text-sm text-gray-700">{{ user.name }}</span>
+            <div class="flex flex-col items-start">
+              <span class="font-medium text-sm text-gray-800">{{ user.name }}</span>
+              <span class="text-xs text-gray-500">{{ user.position }}</span>
+            </div>
             <i class="fas fa-chevron-down text-xs text-gray-600"></i>
           </button>
           <div id="user-menu" class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 hidden ring-1 ring-black ring-opacity-5">
@@ -33,33 +35,7 @@ render_tracking_list %} {% block content %}
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center card-hover">
-        <div class="p-3 bg-green-100 rounded-lg mr-4"><i class="fas fa-wrench text-green-600 text-xl"></i></div>
-        <div>
-          <h3 class="text-lg font-semibold text-gray-800">Tugas Utama</h3>
-          <p class="text-sm text-gray-600">Isi MAN, Hours, dan TECH</p>
-        </div>
-      </div>
-      <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center card-hover">
-        <div class="p-3 bg-blue-100 rounded-lg mr-4"><i class="fas fa-calendar-alt text-blue-600 text-xl"></i></div>
-        <div>
-          <h3 class="text-lg font-semibold text-gray-800">Kelola Tanggal</h3>
-          <p class="text-sm text-gray-600">Update Start & Finish Date</p>
-        </div>
-      </div>
-      <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center card-hover">
-        <div class="p-3 bg-yellow-100 rounded-lg mr-4"><i class="fas fa-paper-plane text-yellow-800 text-xl"></i></div>
-        <div>
-          <h3 class="text-lg font-semibold text-gray-800">Kirim ke Inspector</h3>
-          <p class="text-sm text-gray-600">Selesaikan langkah kerja</p>
-        </div>
-      </div>
-    </div>
-
-    {% include 'components/status_chart.html' with context %} {{ render_tracking_list(parts, users, user) }}
-  </div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{% include 'components/status_chart.html' with context %} {{ render_tracking_list(parts, users, user) }}</div>
 </div>
 
 <script>

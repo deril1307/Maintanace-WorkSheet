@@ -10,7 +10,10 @@ from config.settings import Config
 from models import db
 from models.user import User
 
+# inisiasi flask
 app = Flask(__name__)
+
+# inisiasi template jinja
 app.jinja_env.loader.searchpath = [
     'templates', 'templates/shared', 'templates/auth', 
     'templates/admin', 'templates/mechanic', 'templates/quality', 'templates/mws'
@@ -22,6 +25,7 @@ app.config.from_object(Config)
 # Inisialisasi database dengan aplikasi
 db.init_app(app)
 
+# csrf protected
 from flask_wtf.csrf import CSRFProtect
 csrf = CSRFProtect(app) 
 
@@ -69,14 +73,18 @@ JOB_STEPS_TEMPLATES = {
         ])
     ]
 }
+# =====================================================================
+# FUNGSI-FUNGSI HELPERS
+# =====================================================================
 
-
+# laod data mws dari json
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r') as f:
             return json.load(f)
     return get_default_data()
 
+# laod data mws dari json
 def save_data(data):
     with open(DATA_FILE, 'w') as f:
         json.dump(data, f, indent=2)
@@ -110,6 +118,12 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_error_page(e)
+# Akhir Tampilan Error
+
+
+# =====================================================================
+# ROUTE UMUM (LANDING PAGE & AUTENTIKASI)
+# =====================================================================
 
 # Landing Page
 @app.route('/')
@@ -117,6 +131,7 @@ def index():
     data = load_data()
     return render_template('shared/index.html', parts=data['parts'])
 
+# get user dari db
 def get_users_from_db():
     """Mengambil semua user dari DB dan mengubahnya ke format dictionary."""
     all_users = User.query.all()
@@ -170,6 +185,11 @@ def logout():
     session.pop('user', None)
     return redirect(url_for('login'))
 
+
+# =====================================================================
+# ROUTE DASHBOARD BERDASARKAN ROLE
+# =====================================================================
+
 # Dahboard (Tidak ada perubahan, sudah benar)
 @app.route('/dashboard')
 def dashboard():
@@ -189,6 +209,11 @@ def admin_dashboard():
     user_parts = data.get('parts', {})
     
     return render_template('admin/admin_dashboard.html', user=session['user'], parts=user_parts, users=users)
+
+
+# =====================================================================
+# ROUTE MANAJEMEN PENGGUNA (ADMIN & SUPERADMIN)
+# =====================================================================
 
 # Route untuk halaman utama manajemen pengguna
 @app.route('/users')
@@ -345,7 +370,6 @@ def role_dashboard():
     
 
 # MWS
-
 @app.route('/create_mws')
 def create_mws():
     if 'user' not in session or session['user']['role'] != 'admin':
@@ -365,28 +389,35 @@ def create_mws_post():
     if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
         return jsonify({'error': 'Unauthorized'}), 403
 
-    # ✅ VALIDASI CSRF TOKEN dari header
+    # Validasi CSRF Token tetap sama
     csrf_token = request.headers.get('X-CSRFToken')
     try:
         validate_csrf(csrf_token)
     except ValidationError:
         return jsonify({'error': 'CSRF token tidak valid'}), 400
 
-    # Lanjutkan proses setelah CSRF valid
     req_data = request.get_json()
     
     data = load_data()
     part_count = len(data.get('parts', {})) + 1
     part_id = f"MWS-{part_count:03d}"
     
-    tittle_obj = req_data.get('tittle', {})
-    job_type = tittle_obj.get('jobType')
+    # [MODIFIKASI] Ambil tittle dan jobType sebagai field terpisah
+    # Asumsi dari frontend akan mengirim 'tittle_name' dan 'jobType'
+    tittle_name = req_data.get('tittle_name')
+    job_type = req_data.get('jobType')
+    
+    if not tittle_name or not job_type:
+        return jsonify({'success': False, 'error': 'Tittle dan Jenis Pekerjaan wajib diisi.'}), 400
+        
     steps_template = JOB_STEPS_TEMPLATES.get(job_type, [])
 
+    # [MODIFIKASI] Buat objek MWS dengan struktur baru
     new_mws = {
         'partNumber': req_data.get('partNumber'),
         'serialNumber': req_data.get('serialNumber'),
-        'tittle': tittle_obj,  
+        'tittle': tittle_name,  # <-- Simpan sebagai string
+        'jobType': job_type,    # <-- Simpan sebagai field baru
         'ref': req_data.get('ref'),
         'customer': req_data.get('customer'),
         'acType': req_data.get('acType'),
@@ -439,7 +470,7 @@ def mws_detail(part_id):
         return redirect(url_for('login'))
     
     user = session['user']
-    data = load_data() # Tetap pakai ini untuk data MWS dari JSON
+    data = load_data() 
     
    # Ambil data pengguna dari database
     users = get_users_from_db() 
@@ -450,6 +481,147 @@ def mws_detail(part_id):
         return redirect(url_for('dashboard'))
     
     return render_template('mws/mws_detail.html', user=user, part=part, part_id=part_id, users=users)
+
+@csrf.exempt
+@app.route('/update_mws_info', methods=['POST'])
+def update_mws_info():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Request JSON tidak valid.'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Gagal mem-parsing request: {str(e)}'}), 400
+
+    part_id = data.pop('partId', None)
+    if not part_id:
+        return jsonify({'success': False, 'error': 'Part ID tidak ditemukan dalam request.'}), 400
+
+    db_data = load_data()
+
+    if part_id not in db_data.get('parts', {}):
+        return jsonify({'success': False, 'error': f'Part dengan ID {part_id} tidak ditemukan.'}), 404
+
+    part_to_update = db_data['parts'][part_id]
+    
+    # [MODIFIKASI] Logika update disederhanakan
+    for key, value in data.items():
+        # Cukup perbarui kunci yang ada di level atas
+        if key in part_to_update:
+            part_to_update[key] = value
+            
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(db_data, f, indent=2)
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Gagal menyimpan ke database: {str(e)}'}), 500
+
+    return jsonify({'success': True})
+
+# =====================================================================
+# ROUTE AKSI SPESIFIK PADA MWS (CRUD STEP & UPDATE STATUS)
+# =====================================================================
+
+# crud untuk step pada mws
+@csrf.exempt
+@app.route('/insert_step/<part_id>', methods=['POST'])
+def insert_step(part_id):
+    # Keamanan: Pastikan hanya admin yang bisa menyisipkan
+    if 'user' not in session or session['user']['role'] != 'admin':
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    data = load_data()
+    if part_id not in data.get('parts', {}):
+        return jsonify({'success': False, 'error': 'Part tidak ditemukan'}), 404
+
+    part = data['parts'][part_id]
+    req_data = request.json
+    new_description = req_data.get('description')
+    after_step_no = req_data.get('after_step_no')
+
+    if not new_description or after_step_no is None:
+        return jsonify({'success': False, 'error': 'Data tidak lengkap'}), 400
+    part_steps = part.get('steps', [])
+    for step in part_steps:
+        if step['no'] > after_step_no:
+            step['no'] += 1
+
+    # Buat objek step baru dengan nomor yang benar
+    new_step = {
+        "no": after_step_no + 1,
+        "description": new_description,
+        "details": [],
+        "status": "pending",
+        "completedBy": "",
+        "completedDate": "",
+        "man": "",
+        "hours": "",
+        "tech": "",
+        "insp": ""
+    }
+
+    part_steps.append(new_step)
+    part['steps'] = sorted(part_steps, key=lambda s: s['no'])
+    save_data(data)
+    return jsonify({'success': True})
+
+
+@csrf.exempt
+@app.route('/update_step_description/<part_id>/<int:step_no>', methods=['POST'])
+def update_step_description(part_id, step_no):
+    if 'user' not in session or session['user']['role'] != 'admin':
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    data = load_data()
+    if part_id not in data.get('parts', {}):
+        return jsonify({'success': False, 'error': 'Part tidak ditemukan'}), 404
+
+    part = data['parts'][part_id]
+    new_description = request.json.get('description')
+
+    if not new_description:
+        return jsonify({'success': False, 'error': 'Deskripsi tidak boleh kosong'}), 400
+
+    step_to_update = next((s for s in part.get('steps', []) if s['no'] == step_no), None)
+
+    if not step_to_update:
+        return jsonify({'success': False, 'error': 'Langkah kerja tidak ditemukan'}), 404
+
+    step_to_update['description'] = new_description
+    save_data(data)
+
+    return jsonify({'success': True})
+
+
+@csrf.exempt
+@app.route('/delete_step/<part_id>/<int:step_no>', methods=['DELETE'])
+def delete_step(part_id, step_no):
+    # Keamanan: Pastikan hanya admin yang bisa menghapus
+    if 'user' not in session or session['user']['role'] != 'admin':
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    data = load_data()
+    if part_id not in data.get('parts', {}):
+        return jsonify({'success': False, 'error': 'Part tidak ditemukan'}), 404
+
+    part = data['parts'][part_id]
+    
+    step_to_delete = next((s for s in part.get('steps', []) if s['no'] == step_no), None)
+    if not step_to_delete:
+        return jsonify({'success': False, 'error': 'Langkah kerja tidak ditemukan'}), 404
+
+    # Hapus step dari list
+    part['steps'] = [s for s in part.get('steps', []) if s['no'] != step_no]
+
+    # Urutkan kembali nomor step agar tidak ada yang loncat
+    # Ini adalah logika yang sama dari sebelumnya dan sudah benar
+    for i, step in enumerate(sorted(part['steps'], key=lambda x: x['no'])):
+        step['no'] = i + 1
+
+    save_data(data)
+
+    return jsonify({'success': True})
+
+# Akhir crud untuk step pada mws
 
 @csrf.exempt
 @app.route('/update_step_field', methods=['POST'])
@@ -612,7 +784,7 @@ def update_dates():
     field = request.json.get('field')
     value = request.json.get('value')
     
-    # Only mechanic can update start and finish dates
+
     if user['role'] != 'mechanic':
         return jsonify({'error': 'Only mechanic can update dates'}), 403
     
@@ -659,6 +831,10 @@ def sign_document():
     
     save_data(data)
     return jsonify({'success': True})
+
+# =====================================================================
+# MENJALANKAN APLIKASI
+# =====================================================================
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
