@@ -10,7 +10,6 @@ from config.settings import Config
 from models import db
 from models.user import User
 
-
 app = Flask(__name__)
 app.jinja_env.loader.searchpath = [
     'templates', 'templates/shared', 'templates/auth', 
@@ -22,6 +21,9 @@ app.config.from_object(Config)
 
 # Inisialisasi database dengan aplikasi
 db.init_app(app)
+
+from flask_wtf.csrf import CSRFProtect
+csrf = CSRFProtect(app) 
 
 # Data storage 
 DATA_FILE = 'worksheet_data.json'
@@ -138,25 +140,28 @@ def login():
         nik = request.form.get('nik')
         password = request.form.get('password')
 
-        # [PERBAIKAN] Tambahkan validasi di sini untuk mencegah input kosong
+        # Validasi input kosong
         if not nik or not password:
-            flash('NIK dan password wajib diisi!', 'error')
-            return redirect(url_for('login'))
+            # Mengembalikan pesan error dalam format JSON
+            return jsonify({'success': False, 'message': 'NIK dan password wajib diisi!'}), 400
 
-        # Kode di bawah ini hanya akan berjalan jika NIK dan password sudah diisi
+        # Mencari user di database
         user = User.query.filter_by(nik=nik).first()
 
+        # Memeriksa user dan password
         if user and user.check_password(password):
+            # Simpan data user ke session
             session['user'] = {
                 'nik': user.nik, 'name': user.name, 'role': user.role,
                 'position': user.position, 'description': user.description
             }
-            flash(f"Selamat datang kembali, {user.name}!", 'success')
-            return redirect(url_for('dashboard'))
+            # Mengembalikan sinyal sukses dan URL redirect ke JavaScript
+            return jsonify({'success': True, 'redirect_url': url_for('dashboard')})
         
-        flash('NIK atau password salah!', 'error')
-        return redirect(url_for('login'))
+        # Mengembalikan pesan error dalam format JSON
+        return jsonify({'success': False, 'message': 'NIK atau password salah!'}), 401
     
+    # Jika metode GET, tampilkan halaman login seperti biasa
     return render_template('auth/login.html')
 
 # Logout (Tidak ada perubahan, sudah benar)
@@ -196,6 +201,7 @@ def manage_users():
     return render_template('user-management/manage_user.html', users=all_users_from_db, session=session)
 
 # Route untuk mengambil data satu pengguna (untuk form edit)
+@csrf.exempt
 @app.route('/get_user/<nik>')
 def get_user(nik):
     if 'user' not in session:
@@ -214,6 +220,7 @@ def get_user(nik):
     })
 
 # Route untuk menyimpan (menambah atau mengedit) pengguna
+@csrf.exempt
 @app.route('/save_user', methods=['POST'])
 def save_user():
     if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
@@ -252,6 +259,7 @@ def save_user():
     return jsonify({'success': True})
 
 # Route untuk menghapus pengguna
+@csrf.exempt
 @app.route('/delete_user/<nik>', methods=['DELETE'])
 def delete_user(nik):
     if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
@@ -337,6 +345,7 @@ def role_dashboard():
     
 
 # MWS
+
 @app.route('/create_mws')
 def create_mws():
     if 'user' not in session or session['user']['role'] != 'admin':
@@ -346,26 +355,34 @@ def create_mws():
     return render_template('admin/create_mws.html', user=session['user'])
 
 # --- Rute untuk Membuat MWS ---
+# @csrf.exempt
+from flask import request, jsonify, session
+from flask_wtf.csrf import validate_csrf
+from wtforms import ValidationError
+
 @app.route('/create_mws', methods=['POST'])
 def create_mws_post():
     if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
         return jsonify({'error': 'Unauthorized'}), 403
 
-    # Memproses data dari form yang dikirim oleh JavaScript
+    # ✅ VALIDASI CSRF TOKEN dari header
+    csrf_token = request.headers.get('X-CSRFToken')
+    try:
+        validate_csrf(csrf_token)
+    except ValidationError:
+        return jsonify({'error': 'CSRF token tidak valid'}), 400
+
+    # Lanjutkan proses setelah CSRF valid
     req_data = request.get_json()
     
     data = load_data()
     part_count = len(data.get('parts', {})) + 1
     part_id = f"MWS-{part_count:03d}"
     
-    # Mengambil jobType dari objek tittle yang bersarang
     tittle_obj = req_data.get('tittle', {})
     job_type = tittle_obj.get('jobType')
-    
-    # Mengambil template langkah kerja berdasarkan jobType
     steps_template = JOB_STEPS_TEMPLATES.get(job_type, [])
 
-    # Membuat entri MWS baru dengan struktur yang benar
     new_mws = {
         'partNumber': req_data.get('partNumber'),
         'serialNumber': req_data.get('serialNumber'),
@@ -397,6 +414,8 @@ def create_mws_post():
     
     return jsonify({'success': True, 'partId': part_id})
 
+
+@csrf.exempt
 @app.route('/delete_mws/<part_id>', methods=['DELETE'])
 def delete_mws(part_id):
     # Keamanan: Pastikan hanya admin yang bisa menghapus
@@ -413,6 +432,7 @@ def delete_mws(part_id):
     else:
         return jsonify({'success': False, 'error': 'MWS tidak ditemukan.'}), 404
 
+@csrf.exempt
 @app.route('/mws/<part_id>')
 def mws_detail(part_id):
     if 'user' not in session:
@@ -431,6 +451,7 @@ def mws_detail(part_id):
     
     return render_template('mws/mws_detail.html', user=user, part=part, part_id=part_id, users=users)
 
+@csrf.exempt
 @app.route('/update_step_field', methods=['POST'])
 def update_step_field():
     if 'user' not in session:
@@ -467,7 +488,7 @@ def update_step_field():
     save_data(data)
     return jsonify({'success': True})
 
-
+@csrf.exempt
 @app.route('/update_step_status', methods=['POST'])
 def update_step_status():
     if 'user' not in session:
@@ -521,9 +542,7 @@ def update_step_status():
     return jsonify({'success': True})
 
 
-
-
-# 2. Tambahkan rute API baru ini di mana saja di dalam app.py
+@csrf.exempt
 @app.route('/update_step_details', methods=['POST'])
 def update_step_details():
     # Keamanan: Pastikan hanya admin yang bisa melakukan aksi ini
@@ -533,7 +552,7 @@ def update_step_details():
     req_data = request.get_json()
     part_id = req_data.get('partId')
     step_no = req_data.get('stepNo')
-    new_details = req_data.get('details') # Ini adalah sebuah array dari frontend
+    new_details = req_data.get('details')
 
     if not all([part_id, step_no is not None, isinstance(new_details, list)]):
         return jsonify({'success': False, 'error': 'Data tidak lengkap atau format salah'}), 400
@@ -544,7 +563,8 @@ def update_step_details():
         return jsonify({'success': False, 'error': 'Part tidak ditemukan'}), 404
     
     part = data['parts'][part_id]
-    
+
+
     # Cari langkah kerja (step) yang sesuai berdasarkan nomornya
     step_found = False
     for step in part.get('steps', []):
@@ -561,7 +581,7 @@ def update_step_details():
     
     return jsonify({'success': True, 'message': 'Catatan berhasil diperbarui.'})
 
-
+@csrf.exempt
 @app.route('/assign_part', methods=['POST'])
 def assign_part():
     if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
@@ -581,7 +601,7 @@ def assign_part():
     
     save_data(data)
     return jsonify({'success': True})
-
+@csrf.exempt
 @app.route('/update_dates', methods=['POST'])
 def update_dates():
     if 'user' not in session:
@@ -606,6 +626,7 @@ def update_dates():
     
     return jsonify({'success': True})
 
+@csrf.exempt
 @app.route('/sign_document', methods=['POST'])
 def sign_document():
     if 'user' not in session:
