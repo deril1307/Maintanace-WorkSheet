@@ -6,7 +6,7 @@ from sqlalchemy.dialects.mysql import ENUM # type: ignore
 class MwsPart(db.Model):
     __tablename__ = 'mws_parts'
 
-    # Primary Key yang direkomendasikan
+    # Primary Key 
     id = db.Column(db.Integer, primary_key=True)
     
     # Kolom-kolom data

@@ -1,4 +1,4 @@
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
   {% set total_parts = parts|length %} {% set completed_parts = parts.values()|selectattr('status', 'equalto', 'completed')|list|length %} {% set in_progress_parts = parts.values()|selectattr('status', 'equalto', 'in_progress')|list|length
   %} {% set pending_parts = parts.values()|selectattr('status', 'equalto', 'pending')|list|length %}
 
@@ -33,34 +33,86 @@
 </div>
 
 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
-  <h2 class="text-xl font-semibold text-gray-800 flex items-center mb-4"><i class="fas fa-chart-pie mr-3 text-green-600"></i>Grafik Chart</h2>
-  <div style="height: 300px; position: relative">
-    <canvas id="mwsStatusChart"></canvas>
+  <h2 class="text-xl font-semibold text-gray-800 flex items-center mb-4"><i class="fas fa-chart-pie mr-3 text-green-600"></i>Grafik Status</h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+    <div style="height: 300px; position: relative">
+      <canvas id="mwsStatusChart"></canvas>
+    </div>
+
+    <div style="height: 300px; position: relative">
+      <canvas id="mwsStatusBarChart"></canvas>
+    </div>
   </div>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-      const ctx = document.getElementById('mwsStatusChart');
-      if (ctx) {
-          const pending = {{ pending_parts }};
-          const inProgress = {{ in_progress_parts }};
-          const completed = {{ completed_parts }};
+      // Data yang sama digunakan untuk kedua grafik
+      const pending = {{ pending_parts }};
+      const inProgress = {{ in_progress_parts }};
+      const completed = {{ completed_parts }};
+      const chartLabels = ['Menunggu', 'Dikerjakan', 'Selesai'];
+      const chartData = [pending, inProgress, completed];
+      const chartColors = [ 'rgb(209, 213, 219)', 'rgb(251, 191, 36)', 'rgb(16, 185, 129)' ];
 
-          new Chart(ctx, {
+      // Inisialisasi Grafik Donat
+      const ctxDoughnut = document.getElementById('mwsStatusChart');
+      if (ctxDoughnut) {
+          new Chart(ctxDoughnut, {
               type: 'doughnut',
               data: {
-                  labels: ['Menunggu', 'Dikerjakan', 'Selesai'],
+                  labels: chartLabels,
                   datasets: [{
                       label: 'Status Tugas',
-                      data: [pending, inProgress, completed],
-                      backgroundColor: [ 'rgb(209, 213, 219)', 'rgb(251, 191, 36)', 'rgb(16, 185, 129)' ],
+                      data: chartData,
+                      backgroundColor: chartColors,
                       hoverOffset: 4
                   }]
               },
               options: {
                   responsive: true,
-                  maintainAspectRatio: false
+                  maintainAspectRatio: false,
+                  plugins: {
+                      legend: {
+                          position: 'top',
+                      }
+                  }
+              }
+          });
+      }
+
+      // Inisialisasi Grafik Batang
+      const ctxBar = document.getElementById('mwsStatusBarChart');
+      if (ctxBar) {
+          new Chart(ctxBar, {
+              type: 'bar',
+              data: {
+                  labels: chartLabels,
+                  datasets: [{
+                      label: 'Jumlah Work Sheet',
+                      data: chartData,
+                      backgroundColor: chartColors,
+                      borderColor: chartColors,
+                      borderWidth: 1
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          ticks: {
+                              stepSize: 1
+                          }
+                      }
+                  },
+                  plugins: {
+                      legend: {
+                          display: false
+                      }
+                  }
               }
           });
       }

@@ -63,7 +63,7 @@ block content %}
       </div>
     </div>
 
-    {% include 'components/status_chart.html' with context %} {{ render_tracking_list(parts, users, user) }}
+    {{ render_tracking_list(parts, users, user) }} {% include 'components/status_chart.html' with context %}
   </div>
 </div>
 

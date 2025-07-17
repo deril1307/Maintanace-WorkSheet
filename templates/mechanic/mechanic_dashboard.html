@@ -35,7 +35,7 @@ render_tracking_list %} {% block content %}
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{% include 'components/status_chart.html' with context %} {{ render_tracking_list(parts, users, user) }}</div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{{ render_tracking_list(parts, users, user) }} {% include 'components/status_chart.html' with context %}</div>
 </div>
 
 <script>

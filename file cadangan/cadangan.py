@@ -149,3 +149,37 @@
 #             }
 #         }
 #     }
+@csrf.exempt
+@app.route('/set_urgent_status/<part_id>', methods=['POST'])
+def set_urgent_status(part_id):
+    if 'user' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    user = session['user']
+    req_data = request.get_json()
+    action = req_data.get('action')
+
+    data = load_data()
+    part = data.get('parts', {}).get(part_id)
+
+    if not part:
+        return jsonify({'success': False, 'error': 'Part tidak ditemukan'}), 404
+
+    # --- Logika berdasarkan Aksi dan Role ---
+    if action == 'request' and user['role'] == 'mechanic':
+        part['urgent_request'] = True
+    
+    elif action == 'approve' and user['role'] in ['admin', 'superadmin']:
+        part['is_urgent'] = True
+        part['urgent_request'] = False # Hapus tanda permintaan
+        
+    elif action == 'toggle' and user['role'] in ['admin', 'superadmin']:
+        # Toggle status urgent dan hapus permintaan jika ada
+        part['is_urgent'] = not part.get('is_urgent', False)
+        part['urgent_request'] = False
+        
+    else:
+        return jsonify({'success': False, 'error': 'Aksi tidak diizinkan'}), 403
+
+    save_data(data)
+    return jsonify({'success': True, 'message': 'Status urgensi berhasil diperbarui.'})

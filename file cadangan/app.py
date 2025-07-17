@@ -12,11 +12,6 @@ from config.settings import Config
 from models import db
 from models.user import User
 
-
-from flask_wtf.csrf import validate_csrf
-from wtforms import ValidationError
-
-
 # inisiasi flask
 app = Flask(__name__)
 
@@ -202,30 +197,6 @@ def logout():
 def dashboard():
     return redirect(url_for('role_dashboard'))
 
-
-@app.route('/role-dashboard')
-def role_dashboard():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    role = session['user']['role']
-    
-    dashboard_map = {
-        'admin': 'admin_dashboard',
-        'mechanic': 'mechanic_dashboard',
-        'quality1': 'quality1_dashboard',
-        'quality2': 'quality2_dashboard',
-        'superadmin': 'superadmin_dashboard'
-    }
-    
-    if role in dashboard_map:
-        return redirect(url_for(dashboard_map[role]))
-    else:
-        flash('Role tidak dikenali!', 'error')
-        return redirect(url_for('logout'))
-    
-
-
 # Admin
 @app.route('/admin-dashboard')
 def admin_dashboard():
@@ -233,6 +204,7 @@ def admin_dashboard():
         flash('Akses ditolak!', 'error')
         return redirect(url_for('login'))
     
+    # Logika diubah: Mengambil data parts dari JSON, tapi data users dari DB
     data = load_data()
     users = get_users_from_db()
     
@@ -376,6 +348,28 @@ def superadmin_dashboard():
     
     return render_template('superadmin/superadmin_dashboard.html', user=session['user'], parts=data.get('parts', {}), users=users)
 
+# Pengarah Dashboard berdasarkan Role (Tidak ada perubahan, sudah benar)
+@app.route('/role-dashboard')
+def role_dashboard():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    role = session['user']['role']
+    
+    dashboard_map = {
+        'admin': 'admin_dashboard',
+        'mechanic': 'mechanic_dashboard',
+        'quality1': 'quality1_dashboard',
+        'quality2': 'quality2_dashboard',
+        'superadmin': 'superadmin_dashboard'
+    }
+    
+    if role in dashboard_map:
+        return redirect(url_for(dashboard_map[role]))
+    else:
+        flash('Role tidak dikenali!', 'error')
+        return redirect(url_for('logout'))
+    
 
 # MWS
 @app.route('/create_mws')
@@ -386,6 +380,10 @@ def create_mws():
     
     return render_template('admin/create_mws.html', user=session['user'])
 
+# --- Rute untuk Membuat MWS ---
+from flask import request, jsonify, session
+from flask_wtf.csrf import validate_csrf
+from wtforms import ValidationError
 
 @app.route('/create_mws', methods=['POST'])
 def create_mws_post():
@@ -526,7 +524,7 @@ def update_mws_info():
 @app.route('/insert_step/<part_id>', methods=['POST'])
 def insert_step(part_id):
     # Keamanan: Pastikan hanya admin yang bisa menyisipkan
-    if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
+    if 'user' not in session or session['user']['role'] != 'admin':
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
     data = load_data()
@@ -568,7 +566,7 @@ def insert_step(part_id):
 @csrf.exempt
 @app.route('/update_step_description/<part_id>/<int:step_no>', methods=['POST'])
 def update_step_description(part_id, step_no):
-    if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
+    if 'user' not in session or session['user']['role'] != 'admin':
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
     data = load_data()
@@ -595,7 +593,8 @@ def update_step_description(part_id, step_no):
 @csrf.exempt
 @app.route('/delete_step/<part_id>/<int:step_no>', methods=['DELETE'])
 def delete_step(part_id, step_no):
-    if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
+    # Keamanan: Pastikan hanya admin yang bisa menghapus
+    if 'user' not in session or session['user']['role'] != 'admin':
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
     data = load_data()
@@ -708,9 +707,10 @@ def update_step_status():
 @csrf.exempt
 @app.route('/update_step_details', methods=['POST'])
 def update_step_details():
-    if 'user' not in session or session['user']['role'] not in ['admin', 'superadmin']:
+    # Keamanan: Pastikan hanya admin yang bisa melakukan aksi ini
+    if 'user' not in session or session['user']['role'] != 'admin':
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-
+    
     req_data = request.get_json()
     part_id = req_data.get('partId')
     step_no = req_data.get('stepNo')
@@ -729,6 +729,7 @@ def update_step_details():
     step_found = False
     for step in part.get('steps', []):
         if step.get('no') == step_no:
+
             step['details'] = new_details
             step_found = True
             break
@@ -739,6 +740,8 @@ def update_step_details():
     save_data(data)
     
     return jsonify({'success': True, 'message': 'Catatan berhasil diperbarui.'})
+
+# Tambahkan route ini di file aplikasi Flask Anda (misal: app.py)
 
 @csrf.exempt
 @app.route('/update_step_after_submission', methods=['POST'])
@@ -824,7 +827,6 @@ def assign_part():
     
     save_data(data)
     return jsonify({'success': True})
-
 @csrf.exempt
 @app.route('/update_dates', methods=['POST'])
 def update_dates():
@@ -982,69 +984,6 @@ def stop_timer():
     
     # Kirim kembali nilai baru (yang sekarang adalah menit)
     return jsonify({'success': True, 'hours': step['hours']})
-
-
-@csrf.exempt
-@app.route('/set_urgent_status/<part_id>', methods=['POST'])
-def set_urgent_status(part_id):
-    if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-
-    user = session['user']
-    req_data = request.get_json()
-    action = req_data.get('action')
-
-    data = load_data()
-    part = data.get('parts', {}).get(part_id)
-
-    if not part:
-        return jsonify({'success': False, 'error': 'Part tidak ditemukan'}), 404
-
-    if action == 'request' and user['role'] == 'mechanic':
-        part['urgent_request'] = True
-    
-    elif action == 'approve' and user['role'] in ['admin', 'superadmin']:
-        part['is_urgent'] = True
-        part['urgent_request'] = False 
-        
-    elif action == 'toggle' and user['role'] in ['admin', 'superadmin']:
-        part['is_urgent'] = not part.get('is_urgent', False)
-        part['urgent_request'] = False
-        
-    else:
-        return jsonify({'success': False, 'error': 'Aksi tidak diizinkan'}), 403
-
-    save_data(data)
-    return jsonify({'success': True, 'message': 'Status urgensi berhasil diperbarui.'})
-
-# =====================================================================
-# ROUTE UNTUK CETAK MWS
-# =====================================================================.
-@app.route('/cetak/<part_id>')
-def cetak_mws(part_id):
-    """
-    Rute ini khusus untuk testing dan menampilkan halaman cetak
-    untuk MWS (Maintenance Work Sheet) tertentu.
-    """
-    # Pastikan pengguna sudah login untuk mengaksesnya
-    if 'user' not in session:
-        return redirect(url_for('login'))
-
-    # Muat semua data dari file JSON
-    data = load_data()
-
-    # Ambil data part yang spesifik berdasarkan part_id dari URL
-    part = data.get('parts', {}).get(part_id)
-
-    # Jika data part tidak ditemukan, kembalikan ke dashboard
-    if not part:
-        flash('MWS dengan ID tersebut tidak ditemukan!', 'error')
-        return redirect(url_for('dashboard'))
-
-    # Render template cetak.html dan kirim data 'part' ke dalamnya
-    # Pastikan Anda sudah punya file 'cetak.html' di folder 'templates/mws/'
-    return render_template('mws/cetak.html', part=part, part_id=part_id)
-
 # =====================================================================
 # MENJALANKAN APLIKASI
 # =====================================================================.
